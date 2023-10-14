@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-1005464068564361~1050666756</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>fb</string>
+		<string>garageband</string>
+	</array>
+	<key>UIAppFonts</key>
+	<array>
+		<string>BubblegumSans-Regular.ttf</string>
+		<string>Avenir LT Std 35 Light.otf</string>
+		<string>Avenir LT Std 95 Black.otf</string>
+	</array>
+</dict>
+</plist>

@@ -1,0 +1,165 @@
+//
+//  ChatInputBox.swift
+//  RealtimeChatMongoDB
+//
+//  Created by darktech4 on 01/06/2023.
+//
+
+import SwiftUI
+import RealmSwift
+
+struct ChatInputBox: View {
+    @AppStorage("shouldShareLocation") var shouldShareLocation = false
+    @ObservedRealmObject var user: User
+    var send: (_: ChatMessage) -> Void = { _ in }
+    var focusAction: () -> Void = {}
+    private var isEmpty: Bool { photo == nil && location == [] && chatText == "" }
+    
+    @FocusState var isTextFocussed: Bool
+    @State var photo: Photo?
+    @State var chatText = ""
+    @State var location =  [Double]()
+    @State var showMore = true
+    private enum Dimensions {
+        static let maxHeight: CGFloat = 100
+        static let minHeight: CGFloat = 100
+        static let radius: CGFloat = 10
+        static let imageSize: CGFloat = 70
+        static let padding: CGFloat = 15
+        static let toolStripHeight: CGFloat = 35
+    }
+    
+    var body: some View {
+        VStack{
+            HStack{
+                if let photo = photo {
+                    ThumbnailWithDelete(photo: photo, action: deletePhoto)
+                }
+                
+                if location.count == 2 {
+                    MapThumbnailWithDelete(location: location, action: deleteMap)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            
+            HStack{
+                if !showMore {
+                    Button {
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            showMore = true
+                        }
+                    } label: {
+                        Image("left 1")
+                            .resizable()
+                            .frame(width: 30, height: 30)
+                    }
+                }
+                
+                if showMore {
+                    HStack {
+                        LocationButton(action: addLocation, active: shouldShareLocation && location.count == 0, activeImage: "location.fill", inactiveImage: "location")
+                        CameraButton(action: takePhoto, active: photo == nil, activeImage: "camera.fill", inactiveImage: "camera")
+                        AttachButton(action: addAttachment, active: photo == nil, activeImage: "photo.fill", inactiveImage: "photo.fill")
+                    }
+                }
+                
+                Spacer()
+                
+                TextEditor(text: $chatText)
+                    .onTapGesture{
+                        if showMore {
+                            withAnimation(.easeIn(duration: 0.2)) {
+                                showMore = false
+                            }
+                        }
+                        else {
+                            showMore = false
+                        }
+                    }
+                    .foregroundColor(Color.text)
+                    .keyboardType(.default)
+                    .padding(10)
+                    .background(Color(hex: "F6F4F4"))
+                    .cornerRadius(10)
+                    .scrollContentBackground(.hidden)
+                    .frame(height: 40)
+                    .onChange(of: chatText) { newValue in
+                        withAnimation(.easeIn(duration: 0.2)) {
+                            showMore = false
+                        }
+                    }
+                
+                Spacer()
+                
+                Button{
+                    if !isEmpty{
+                        sendChat()
+                    }
+                }label: {
+                    Image("send")
+                        .resizable()
+                        .frame(width: 35,height: 35)
+                }
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+    
+    private func addLocation() {
+        let location = LocationHelper.shared.currentLocation
+        withAnimation {
+            self.location = [location.longitude, location.latitude]
+            sendChat()
+        }
+    }
+    
+    private func takePhoto() {
+        PhotoCaptureController.show(source: .camera) { controller, photo in
+            withAnimation {
+                self.photo = photo
+            }
+            sendChat()
+            controller.hide()
+            
+        }
+    }
+    
+    private func addAttachment() {
+        PhotoCaptureController.show(source: .photoLibrary) { controller, photo in
+            self.photo = photo
+            sendChat()
+            controller.hide()
+        }
+    }
+    
+    private func deletePhoto() {
+        withAnimation {
+            photo = nil
+        }
+    }
+    
+    private func deleteMap() {
+        withAnimation {
+            location = []
+        }
+    }
+    
+    private func sendChat() {
+        sendMessage(text: chatText, photo: photo, location: location)
+        photo = nil
+        chatText = ""
+        location = []
+        isTextFocussed = true
+    }
+    
+    private func sendMessage(text: String, photo: Photo?, location: [Double]) {
+        let chatMessage = ChatMessage(
+            author: user.userName,
+            authorID: user._id,
+            text: text,
+            isVisible: true,
+            image: photo,
+            location: location)
+        send(chatMessage)
+    }
+}
